@@ -16,17 +16,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
 
-// Initialize Database
-const db = new sqlite3.Database('./game.db', (err) => {
-    if (err) {
-        console.error('Error opening database:', err);
-    } else {
-        console.log('Connected to SQLite database');
-        initializeDatabase();
-    }
-});
+// Database variable (will be initialized)
+let db;
 
-function initializeDatabase() {
+function initializeDatabase(callback) {
     // Users table
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,23 +27,43 @@ function initializeDatabase() {
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
-
-    // Leaderboard table
-    db.run(`CREATE TABLE IF NOT EXISTS leaderboard (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        username TEXT NOT NULL,
-        score INTEGER NOT NULL,
-        quotes_completed INTEGER NOT NULL,
-        level INTEGER NOT NULL,
-        time_taken REAL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id)
-    )`);
-
-    // Create index for faster leaderboard queries
-    db.run(`CREATE INDEX IF NOT EXISTS idx_leaderboard_score ON leaderboard(score DESC)`);
+    )`, (err) => {
+        if (err) {
+            console.error('Error creating users table:', err);
+            if (callback) callback(err);
+            return;
+        }
+        
+        // Leaderboard table
+        db.run(`CREATE TABLE IF NOT EXISTS leaderboard (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            username TEXT NOT NULL,
+            score INTEGER NOT NULL,
+            quotes_completed INTEGER NOT NULL,
+            level INTEGER NOT NULL,
+            time_taken REAL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )`, (err) => {
+            if (err) {
+                console.error('Error creating leaderboard table:', err);
+                if (callback) callback(err);
+                return;
+            }
+            
+            // Create index for faster leaderboard queries
+            db.run(`CREATE INDEX IF NOT EXISTS idx_leaderboard_score ON leaderboard(score DESC)`, (err) => {
+                if (err) {
+                    console.error('Error creating index:', err);
+                    if (callback) callback(err);
+                    return;
+                }
+                console.log('Database tables initialized successfully');
+                if (callback) callback(null);
+            });
+        });
+    });
 }
 
 // Authentication Middleware
@@ -246,10 +259,26 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+// Initialize Database and start server
+db = new sqlite3.Database('./game.db', (err) => {
+    if (err) {
+        console.error('Error opening database:', err);
+        process.exit(1);
+    } else {
+        console.log('Connected to SQLite database');
+        initializeDatabase((initErr) => {
+            if (initErr) {
+                console.error('Failed to initialize database:', initErr);
+                process.exit(1);
+            } else {
+                // Start server after database is ready
+                app.listen(PORT, () => {
+                    console.log(`Server running on http://localhost:${PORT}`);
+                    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+                });
+            }
+        });
+    }
 });
 
 // Graceful shutdown
