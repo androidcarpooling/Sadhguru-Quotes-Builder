@@ -129,11 +129,14 @@
             <div class="start-content">
                 <h1>🧘 Sadhguru Quotes Builder</h1>
                 <p class="start-description">Unscramble the wisdom of Sadhguru! Arrange jumbled words to form inspiring quotes. The faster you complete, the higher your score!</p>
+                <p class="game-rules">Complete 7 quotes to finish. Each player can only play once!</p>
                 <div class="name-input-section">
                     <input type="text" id="player-name-input" placeholder="Enter your name" maxlength="50" class="name-input">
                     <p class="name-hint">Enter your name to appear on the leaderboard</p>
+                    <p id="already-played-message" class="error-message hidden" style="margin-top: 10px;"></p>
                 </div>
                 <button class="btn btn-primary btn-large" onclick="startGame()">Start Playing</button>
+                <button class="btn btn-secondary btn-large" onclick="showLeaderboardModal()" style="margin-top: 15px;">View Leaderboard</button>
             </div>
         </div>
 
@@ -180,6 +183,6 @@
 
     <script src="quotes-data.js?v=8.0"></script>
     <script src="auth.js?v=5.0"></script>
-    <script src="game.js?v=15.0"></script>
+    <script src="game.js?v=16.0"></script>
 </body>
 </html>

@@ -987,6 +987,17 @@ body {
     margin: 0;
 }
 
+.game-rules {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    font-weight: 600;
+    padding: 10px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
 /* Toast Animations */
 @keyframes slideDown {
     from {

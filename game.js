@@ -1,6 +1,7 @@
 // Game Configuration
 const MAX_QUOTES_PER_GAME = 7;
-const GAME_TIME_LIMIT = 3 * 60 * 1000; // 3 minutes in milliseconds
+// No time limit - users can play as long as they want
+// Scoring still based on speed and accuracy
 
 // Game State
 let gameState = {
@@ -34,6 +35,22 @@ function initGame() {
     jumbledArea.addEventListener('dragleave', handleJumbledDragLeave);
 }
 
+// Check if player has already completed a game
+function hasPlayerCompletedGame(playerName) {
+    const completedPlayers = JSON.parse(localStorage.getItem('completedPlayers') || '[]');
+    return completedPlayers.includes(playerName.toLowerCase().trim());
+}
+
+// Mark player as completed
+function markPlayerCompleted(playerName) {
+    const completedPlayers = JSON.parse(localStorage.getItem('completedPlayers') || '[]');
+    const normalizedName = playerName.toLowerCase().trim();
+    if (!completedPlayers.includes(normalizedName)) {
+        completedPlayers.push(normalizedName);
+        localStorage.setItem('completedPlayers', JSON.stringify(completedPlayers));
+    }
+}
+
 // Start Game
 function startGame() {
     const nameInput = document.getElementById('player-name-input');
@@ -41,6 +58,16 @@ function startGame() {
     
     if (!playerName) {
         showMessage('Please enter your name to start playing!', 'warning');
+        return;
+    }
+    
+    // Check if player has already completed a game
+    if (hasPlayerCompletedGame(playerName)) {
+        showMessage('You have already completed a game! You can only view the leaderboard now.', 'warning');
+        setTimeout(() => {
+            document.getElementById('start-screen').classList.add('hidden');
+            showLeaderboardModal();
+        }, 2000);
         return;
     }
     
@@ -55,33 +82,7 @@ function startGame() {
     gameState.gameStartTime = Date.now();
     updateStats();
     
-    // Start 3-minute timer
-    startGameTimer();
-    
     loadNewQuote();
-}
-
-// Start 3-minute game timer
-function startGameTimer() {
-    // Clear any existing timer
-    if (gameState.gameTimer) {
-        clearInterval(gameState.gameTimer);
-    }
-    
-    gameState.gameTimer = setTimeout(() => {
-        showMessage('Time\'s up! Game ending...', 'info');
-        setTimeout(() => {
-            endGame();
-        }, 1000);
-    }, GAME_TIME_LIMIT);
-}
-
-// Stop game timer
-function stopGameTimer() {
-    if (gameState.gameTimer) {
-        clearTimeout(gameState.gameTimer);
-        gameState.gameTimer = null;
-    }
 }
 
 // Load New Quote
@@ -515,13 +516,6 @@ function startTimer() {
     gameState.timer = setInterval(() => {
         const elapsed = (Date.now() - gameState.startTime) / 1000;
         document.getElementById('timer').textContent = elapsed.toFixed(1) + 's';
-        
-        // Show warning when approaching 3-minute limit
-        const totalElapsed = gameState.gameStartTime ? (Date.now() - gameState.gameStartTime) / 1000 : 0;
-        const timeLeft = GAME_TIME_LIMIT / 1000 - totalElapsed;
-        if (timeLeft <= 30 && timeLeft > 0 && Math.floor(timeLeft) % 10 === 0) {
-            showMessage(`⏰ ${Math.floor(timeLeft)} seconds remaining!`, 'warning');
-        }
     }, 100);
 }
 
@@ -768,7 +762,7 @@ function nextQuote() {
     gameState.level = Math.floor(gameState.quotesCompleted / 5) + 1;
     updateStats();
     
-    // Check if reached max quotes (10)
+    // Check if reached max quotes (7)
     if (gameState.quotesCompleted >= MAX_QUOTES_PER_GAME) {
         endGame();
         return;
@@ -780,7 +774,6 @@ function nextQuote() {
 // End Game - Record final score
 async function endGame() {
     stopTimer();
-    stopGameTimer();
     const totalTime = gameState.gameStartTime ? (Date.now() - gameState.gameStartTime) / 1000 : 0;
     
     // Submit final score to leaderboard with player name
@@ -798,6 +791,8 @@ async function endGame() {
             scoreSubmitted = result.success;
             if (result.success) {
                 console.log('Score submitted successfully!');
+                // Mark player as completed - they can't play again
+                markPlayerCompleted(gameState.playerName);
             } else {
                 console.error('Score submission failed:', result.error);
                 showMessage('Failed to save score: ' + result.error, 'warning');
@@ -865,11 +860,11 @@ function showEndGameModal(totalTime, scoreSubmitted = false) {
         ${scoreMessage}
     `;
     
-    // Update actions
+    // Update actions - player can only view leaderboard, not play again
     if (actionsEl) {
         actionsEl.innerHTML = `
             <button class="btn btn-primary" onclick="closeResultModal(); setTimeout(() => { showLeaderboardModal(); setTimeout(() => loadLeaderboardData(), 300); }, 500);">View Leaderboard</button>
-            <button class="btn btn-secondary" onclick="closeResultModal(); document.getElementById('start-screen').classList.remove('hidden');">Play Again</button>
+            <button class="btn btn-secondary" onclick="closeResultModal(); document.getElementById('start-screen').classList.remove('hidden');">Back to Home</button>
         `;
     }
     
