@@ -787,16 +787,30 @@ async function endGame() {
     let scoreSubmitted = false;
     if (typeof submitScore === 'function' && gameState.playerName) {
         try {
+            console.log('Attempting to submit score:', {
+                score: gameState.totalScore,
+                quotes: gameState.quotesCompleted,
+                level: gameState.level,
+                time: totalTime,
+                name: gameState.playerName
+            });
             const result = await submitScore(gameState.totalScore, gameState.quotesCompleted, gameState.level, totalTime, gameState.playerName);
             scoreSubmitted = result.success;
-            if (!result.success) {
+            if (result.success) {
+                console.log('Score submitted successfully!');
+            } else {
                 console.error('Score submission failed:', result.error);
+                showMessage('Failed to save score: ' + result.error, 'warning');
             }
         } catch (error) {
             console.error('Error submitting score:', error);
+            showMessage('Error saving score: ' + error.message, 'warning');
         }
     } else {
-        console.warn('submitScore function not available or no player name');
+        console.warn('submitScore function not available or no player name', {
+            hasFunction: typeof submitScore === 'function',
+            hasName: !!gameState.playerName
+        });
     }
     
     // Show end game modal
@@ -854,7 +868,7 @@ function showEndGameModal(totalTime, scoreSubmitted = false) {
     // Update actions
     if (actionsEl) {
         actionsEl.innerHTML = `
-            <button class="btn btn-primary" onclick="closeResultModal(); setTimeout(() => { showLeaderboardModal(); loadLeaderboardData(); }, 500);">View Leaderboard</button>
+            <button class="btn btn-primary" onclick="closeResultModal(); setTimeout(() => { showLeaderboardModal(); setTimeout(() => loadLeaderboardData(), 300); }, 500);">View Leaderboard</button>
             <button class="btn btn-secondary" onclick="closeResultModal(); document.getElementById('start-screen').classList.remove('hidden');">Play Again</button>
         `;
     }

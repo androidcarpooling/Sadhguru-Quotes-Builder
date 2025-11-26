@@ -161,11 +161,11 @@ async function submitScore(score, quotesCompleted, level, timeTaken, playerName)
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                score,
-                quotes_completed: quotesCompleted,
-                level,
-                time_taken: timeTaken,
-                username: playerName
+                score: Number(score),
+                quotes_completed: Number(quotesCompleted),
+                level: Number(level || 1),
+                time_taken: Number(timeTaken) || null,
+                username: String(playerName)
             })
         });
 
@@ -173,13 +173,17 @@ async function submitScore(score, quotesCompleted, level, timeTaken, playerName)
 
         if (response.ok) {
             console.log('Score submitted successfully:', data);
+            // Wait a bit before allowing leaderboard refresh
+            await new Promise(resolve => setTimeout(resolve, 500));
             return { success: true, data };
         } else {
-            console.error('Failed to submit score:', data);
+            console.error('Failed to submit score - Response:', response.status, data);
+            alert('Failed to save score: ' + (data.error || 'Unknown error'));
             return { success: false, error: data.error || 'Unknown error' };
         }
     } catch (error) {
-        console.error('Failed to submit score:', error);
+        console.error('Failed to submit score - Exception:', error);
+        alert('Error saving score: ' + error.message);
         return { success: false, error: error.message };
     }
 }

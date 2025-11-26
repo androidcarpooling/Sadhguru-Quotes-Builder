@@ -174,25 +174,33 @@ app.post('/api/login', (req, res) => {
 app.post('/api/leaderboard', (req, res) => {
     const { score, quotes_completed, level, time_taken, username } = req.body;
 
+    console.log('Score submission received:', { score, quotes_completed, level, time_taken, username });
+
     if (typeof score !== 'number' || typeof quotes_completed !== 'number') {
+        console.error('Invalid score data:', { score, quotes_completed });
         return res.status(400).json({ error: 'Invalid score data' });
     }
 
     if (!username || username.trim().length === 0) {
+        console.error('Username missing');
         return res.status(400).json({ error: 'Username is required' });
     }
 
     // Sanitize username (max 50 chars, trim)
     const sanitizedUsername = username.trim().substring(0, 50) || 'Anonymous';
 
+    console.log('Inserting score into database:', { sanitizedUsername, score, quotes_completed, level, time_taken });
+
     db.run(
         'INSERT INTO leaderboard (user_id, username, score, quotes_completed, level, time_taken) VALUES (?, ?, ?, ?, ?, ?)',
         [null, sanitizedUsername, score, quotes_completed, level || 1, time_taken || null],
         function(err) {
             if (err) {
-                return res.status(500).json({ error: 'Failed to save score' });
+                console.error('Database error saving score:', err);
+                return res.status(500).json({ error: 'Failed to save score', details: err.message });
             }
 
+            console.log('Score saved successfully with ID:', this.lastID);
             res.json({
                 message: 'Score saved successfully',
                 scoreId: this.lastID
@@ -206,25 +214,48 @@ app.get('/api/leaderboard', (req, res) => {
     const limit = parseInt(req.query.limit) || 100;
     const offset = parseInt(req.query.offset) || 0;
 
-    db.all(
-        `SELECT username, score, quotes_completed, level, time_taken, created_at 
-         FROM leaderboard 
-         ORDER BY score DESC, quotes_completed DESC, time_taken ASC, created_at ASC 
-         LIMIT ? OFFSET ?`,
-        [limit, offset],
-        (err, rows) => {
-            if (err) {
-                console.error('Leaderboard query error:', err);
-                return res.status(500).json({ error: 'Failed to fetch leaderboard' });
-            }
+    console.log('Leaderboard query requested:', { limit, offset });
 
-            console.log(`Leaderboard query returned ${rows.length} rows`);
-            res.json({
-                leaderboard: rows || [],
-                total: rows ? rows.length : 0
+    // First, check if table exists and count rows
+    db.get('SELECT COUNT(*) as count FROM leaderboard', (err, countRow) => {
+        if (err) {
+            console.error('Error counting leaderboard rows:', err);
+            // Table might not exist, try to create it
+            initializeDatabase((initErr) => {
+                if (initErr) {
+                    console.error('Failed to initialize database:', initErr);
+                    return res.status(500).json({ error: 'Database error', details: initErr.message });
+                }
+                // Retry query after initialization
+                fetchLeaderboard();
             });
+            return;
         }
-    );
+        console.log(`Total rows in leaderboard: ${countRow.count}`);
+        fetchLeaderboard();
+    });
+
+    function fetchLeaderboard() {
+        db.all(
+            `SELECT username, score, quotes_completed, level, time_taken, created_at 
+             FROM leaderboard 
+             ORDER BY score DESC, quotes_completed DESC, time_taken ASC, created_at ASC 
+             LIMIT ? OFFSET ?`,
+            [limit, offset],
+            (err, rows) => {
+                if (err) {
+                    console.error('Leaderboard query error:', err);
+                    return res.status(500).json({ error: 'Failed to fetch leaderboard', details: err.message });
+                }
+
+                console.log(`Leaderboard query returned ${rows ? rows.length : 0} rows`);
+                res.json({
+                    leaderboard: rows || [],
+                    total: rows ? rows.length : 0
+                });
+            }
+        );
+    }
 });
 
 // Get User's Best Score
