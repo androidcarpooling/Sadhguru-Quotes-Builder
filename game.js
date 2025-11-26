@@ -14,7 +14,6 @@ let gameState = {
     startTime: null,
     gameStartTime: null, // Track total game time
     timer: null,
-    gameTimer: null, // Timer for 3-minute limit
     totalScore: 0,
     currentScore: 0,
     level: 1,
@@ -55,6 +54,7 @@ function markPlayerCompleted(playerName) {
 function startGame() {
     const nameInput = document.getElementById('player-name-input');
     const playerName = nameInput.value.trim();
+    const alreadyPlayedMsg = document.getElementById('already-played-message');
     
     if (!playerName) {
         showMessage('Please enter your name to start playing!', 'warning');
@@ -63,13 +63,20 @@ function startGame() {
     
     // Check if player has already completed a game
     if (hasPlayerCompletedGame(playerName)) {
-        showMessage('You have already completed a game! You can only view the leaderboard now.', 'warning');
+        alreadyPlayedMsg.textContent = 'You have already completed a game! You can only view the leaderboard.';
+        alreadyPlayedMsg.classList.remove('hidden');
+        nameInput.disabled = true;
+        nameInput.style.opacity = '0.5';
         setTimeout(() => {
-            document.getElementById('start-screen').classList.add('hidden');
             showLeaderboardModal();
-        }, 2000);
+        }, 1500);
         return;
     }
+    
+    // Clear any previous messages
+    alreadyPlayedMsg.classList.add('hidden');
+    nameInput.disabled = false;
+    nameInput.style.opacity = '1';
     
     gameState.playerName = playerName;
     document.getElementById('start-screen').classList.add('hidden');
