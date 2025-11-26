@@ -778,22 +778,33 @@ function nextQuote() {
 }
 
 // End Game - Record final score
-function endGame() {
+async function endGame() {
     stopTimer();
     stopGameTimer();
     const totalTime = gameState.gameStartTime ? (Date.now() - gameState.gameStartTime) / 1000 : 0;
     
     // Submit final score to leaderboard with player name
+    let scoreSubmitted = false;
     if (typeof submitScore === 'function' && gameState.playerName) {
-        submitScore(gameState.totalScore, gameState.quotesCompleted, gameState.level, totalTime, gameState.playerName);
+        try {
+            const result = await submitScore(gameState.totalScore, gameState.quotesCompleted, gameState.level, totalTime, gameState.playerName);
+            scoreSubmitted = result.success;
+            if (!result.success) {
+                console.error('Score submission failed:', result.error);
+            }
+        } catch (error) {
+            console.error('Error submitting score:', error);
+        }
+    } else {
+        console.warn('submitScore function not available or no player name');
     }
     
     // Show end game modal
-    showEndGameModal(totalTime);
+    showEndGameModal(totalTime, scoreSubmitted);
 }
 
 // Show End Game Modal
-function showEndGameModal(totalTime) {
+function showEndGameModal(totalTime, scoreSubmitted = false) {
     const modal = document.getElementById('result-modal');
     const content = document.getElementById('result-content');
     const actionsEl = document.getElementById('result-actions');
@@ -802,6 +813,10 @@ function showEndGameModal(totalTime) {
     const minutes = Math.floor(totalTime / 60);
     const seconds = Math.floor(totalTime % 60);
     const timeDisplay = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+    
+    const scoreMessage = scoreSubmitted 
+        ? `<p class="result-message success">Your score has been saved to the leaderboard as "${gameState.playerName}"!</p>`
+        : `<p class="result-message">Score: ${gameState.totalScore.toLocaleString()} points as "${gameState.playerName}"</p>`;
     
     content.innerHTML = `
         <h2>🎉 Game Complete! 🎉</h2>
@@ -833,13 +848,13 @@ function showEndGameModal(totalTime) {
                 <span class="breakdown-value">${avgScore}</span>
             </div>
         </div>
-        <p class="result-message success">Your score has been saved to the leaderboard as "${gameState.playerName}"!</p>
+        ${scoreMessage}
     `;
     
     // Update actions
     if (actionsEl) {
         actionsEl.innerHTML = `
-            <button class="btn btn-primary" onclick="showLeaderboardModal(); closeResultModal();">View Leaderboard</button>
+            <button class="btn btn-primary" onclick="closeResultModal(); setTimeout(() => showLeaderboardModal(), 300);">View Leaderboard</button>
             <button class="btn btn-secondary" onclick="closeResultModal(); document.getElementById('start-screen').classList.remove('hidden');">Play Again</button>
         `;
     }

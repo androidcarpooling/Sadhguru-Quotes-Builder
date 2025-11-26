@@ -150,10 +150,11 @@ function logout() {
 async function submitScore(score, quotesCompleted, level, timeTaken, playerName) {
     if (!playerName) {
         console.log('No player name provided, skipping score submission');
-        return;
+        return { success: false, error: 'No player name' };
     }
 
     try {
+        console.log('Submitting score:', { score, quotesCompleted, level, timeTaken, playerName });
         const response = await fetch(`${API_BASE_URL}/api/leaderboard`, {
             method: 'POST',
             headers: {
@@ -168,14 +169,18 @@ async function submitScore(score, quotesCompleted, level, timeTaken, playerName)
             })
         });
 
+        const data = await response.json();
+
         if (response.ok) {
-            console.log('Score submitted successfully');
+            console.log('Score submitted successfully:', data);
+            return { success: true, data };
         } else {
-            const error = await response.json();
-            console.error('Failed to submit score:', error);
+            console.error('Failed to submit score:', data);
+            return { success: false, error: data.error || 'Unknown error' };
         }
     } catch (error) {
         console.error('Failed to submit score:', error);
+        return { success: false, error: error.message };
     }
 }
 

@@ -209,17 +209,19 @@ app.get('/api/leaderboard', (req, res) => {
     db.all(
         `SELECT username, score, quotes_completed, level, time_taken, created_at 
          FROM leaderboard 
-         ORDER BY score DESC, quotes_completed DESC, created_at ASC 
+         ORDER BY score DESC, quotes_completed DESC, time_taken ASC, created_at ASC 
          LIMIT ? OFFSET ?`,
         [limit, offset],
         (err, rows) => {
             if (err) {
+                console.error('Leaderboard query error:', err);
                 return res.status(500).json({ error: 'Failed to fetch leaderboard' });
             }
 
+            console.log(`Leaderboard query returned ${rows.length} rows`);
             res.json({
-                leaderboard: rows,
-                total: rows.length
+                leaderboard: rows || [],
+                total: rows ? rows.length : 0
             });
         }
     );
