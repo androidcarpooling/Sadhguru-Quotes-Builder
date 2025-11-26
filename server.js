@@ -20,7 +20,7 @@ app.use(express.static('.'));
 let db;
 
 function initializeDatabase(callback) {
-    // Users table
+    // Users table (optional - for future use)
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
@@ -30,21 +30,19 @@ function initializeDatabase(callback) {
     )`, (err) => {
         if (err) {
             console.error('Error creating users table:', err);
-            if (callback) callback(err);
-            return;
+            // Don't fail if users table fails - it's optional
         }
         
-        // Leaderboard table
+        // Leaderboard table - make user_id nullable since we don't require login
         db.run(`CREATE TABLE IF NOT EXISTS leaderboard (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id INTEGER,
             username TEXT NOT NULL,
             score INTEGER NOT NULL,
             quotes_completed INTEGER NOT NULL,
             level INTEGER NOT NULL,
             time_taken REAL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id)
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`, (err) => {
             if (err) {
                 console.error('Error creating leaderboard table:', err);
@@ -56,8 +54,7 @@ function initializeDatabase(callback) {
             db.run(`CREATE INDEX IF NOT EXISTS idx_leaderboard_score ON leaderboard(score DESC)`, (err) => {
                 if (err) {
                     console.error('Error creating index:', err);
-                    if (callback) callback(err);
-                    return;
+                    // Index creation failure is not critical
                 }
                 console.log('Database tables initialized successfully');
                 if (callback) callback(null);
@@ -177,7 +174,7 @@ app.post('/api/leaderboard', (req, res) => {
     console.log('Score submission received:', { score, quotes_completed, level, time_taken, username });
 
     if (typeof score !== 'number' || typeof quotes_completed !== 'number') {
-        console.error('Invalid score data:', { score, quotes_completed });
+        console.error('Invalid score data:', { score, quotes_completed, scoreType: typeof score, quotesType: typeof quotes_completed });
         return res.status(400).json({ error: 'Invalid score data' });
     }
 
@@ -191,22 +188,45 @@ app.post('/api/leaderboard', (req, res) => {
 
     console.log('Inserting score into database:', { sanitizedUsername, score, quotes_completed, level, time_taken });
 
-    db.run(
-        'INSERT INTO leaderboard (user_id, username, score, quotes_completed, level, time_taken) VALUES (?, ?, ?, ?, ?, ?)',
-        [null, sanitizedUsername, score, quotes_completed, level || 1, time_taken || null],
-        function(err) {
-            if (err) {
-                console.error('Database error saving score:', err);
-                return res.status(500).json({ error: 'Failed to save score', details: err.message });
-            }
-
-            console.log('Score saved successfully with ID:', this.lastID);
-            res.json({
-                message: 'Score saved successfully',
-                scoreId: this.lastID
-            });
+    // First ensure table exists
+    db.run(`CREATE TABLE IF NOT EXISTS leaderboard (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        username TEXT NOT NULL,
+        score INTEGER NOT NULL,
+        quotes_completed INTEGER NOT NULL,
+        level INTEGER NOT NULL,
+        time_taken REAL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`, (createErr) => {
+        if (createErr) {
+            console.error('Error creating leaderboard table:', createErr);
+            return res.status(500).json({ error: 'Database setup error', details: createErr.message });
         }
-    );
+
+        // Now insert the score
+        db.run(
+            'INSERT INTO leaderboard (user_id, username, score, quotes_completed, level, time_taken) VALUES (?, ?, ?, ?, ?, ?)',
+            [null, sanitizedUsername, score, quotes_completed, level || 1, time_taken || null],
+            function(err) {
+                if (err) {
+                    console.error('Database error saving score:', err);
+                    console.error('Error details:', {
+                        code: err.code,
+                        message: err.message,
+                        errno: err.errno
+                    });
+                    return res.status(500).json({ error: 'Failed to save score', details: err.message });
+                }
+
+                console.log('Score saved successfully with ID:', this.lastID);
+                res.json({
+                    message: 'Score saved successfully',
+                    scoreId: this.lastID
+                });
+            }
+        );
+    });
 });
 
 // Get Leaderboard
@@ -300,17 +320,28 @@ app.get('/', (req, res) => {
 });
 
 // Initialize Database and start server
-db = new sqlite3.Database('./game.db', (err) => {
+// Use absolute path for Railway deployment
+const dbPath = process.env.DATABASE_PATH || './game.db';
+db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error opening database:', err);
         process.exit(1);
     } else {
-        console.log('Connected to SQLite database');
+        console.log('Connected to SQLite database at:', dbPath);
         initializeDatabase((initErr) => {
             if (initErr) {
                 console.error('Failed to initialize database:', initErr);
                 process.exit(1);
             } else {
+                // Verify tables exist
+                db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, tables) => {
+                    if (err) {
+                        console.error('Error checking tables:', err);
+                    } else {
+                        console.log('Database tables:', tables.map(t => t.name));
+                    }
+                });
+                
                 // Start server after database is ready
                 app.listen(PORT, () => {
                     console.log(`Server running on http://localhost:${PORT}`);
