@@ -1014,4 +1014,10 @@ if (!document.getElementById('toast-animations')) {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     initGame();
+    
+    // Set up start game button
+    const startBtn = document.getElementById('start-game-btn');
+    if (startBtn) {
+        startBtn.addEventListener('click', startGame);
+    }
 });
