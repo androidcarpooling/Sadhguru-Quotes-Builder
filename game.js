@@ -1106,6 +1106,41 @@ if (!document.getElementById('toast-animations')) {
     document.head.appendChild(style);
 }
 
+// View My Score - for returning players
+async function viewMyScore() {
+    const nameInput = document.getElementById('player-name-input');
+    const playerName = nameInput.value.trim();
+    const alreadyPlayedMsg = document.getElementById('already-played-message');
+    
+    if (!playerName) {
+        showMessage('Please enter your name to view your score!', 'warning');
+        return;
+    }
+    
+    // Check if player has already completed a game
+    alreadyPlayedMsg.textContent = 'Checking...';
+    alreadyPlayedMsg.classList.remove('hidden');
+    
+    const hasPlayed = await hasPlayerCompletedGame(playerName);
+    
+    if (hasPlayed) {
+        // Store player name for highlighting in leaderboard
+        gameState.playerName = playerName;
+        alreadyPlayedMsg.textContent = '';
+        alreadyPlayedMsg.classList.add('hidden');
+        
+        // Show leaderboard with their score highlighted
+        await showLeaderboardModal();
+        showMessage(`Welcome back, ${playerName}! Here's your score on the leaderboard.`, 'info');
+    } else {
+        alreadyPlayedMsg.textContent = 'You haven\'t played yet! Click "Start Playing" to begin.';
+        alreadyPlayedMsg.classList.remove('hidden');
+        setTimeout(() => {
+            alreadyPlayedMsg.classList.add('hidden');
+        }, 3000);
+    }
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     initGame();
@@ -1114,5 +1149,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('start-game-btn');
     if (startBtn) {
         startBtn.addEventListener('click', startGame);
+    }
+    
+    // Set up view my score button
+    const viewScoreBtn = document.getElementById('view-my-score-btn');
+    if (viewScoreBtn) {
+        viewScoreBtn.addEventListener('click', viewMyScore);
     }
 });

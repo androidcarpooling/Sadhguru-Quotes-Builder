@@ -206,6 +206,11 @@ async function loadLeaderboardData(listEl) {
             return;
         }
 
+        // Get current player name from gameState (if available)
+        const currentPlayerName = typeof gameState !== 'undefined' && gameState.playerName 
+            ? gameState.playerName.toLowerCase().trim() 
+            : null;
+
         let html = '<div style="margin-bottom: 15px;"><button class="btn btn-secondary btn-small" onclick="loadLeaderboardData()">🔄 Refresh</button></div>';
         html += '<table class="leaderboard-table"><thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Quotes</th><th>Time</th></tr></thead><tbody>';
         
@@ -213,10 +218,16 @@ async function loadLeaderboardData(listEl) {
             const rank = index + 1;
             const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
             const timeDisplay = entry.time_taken ? `${parseFloat(entry.time_taken).toFixed(1)}s` : '-';
+            
+            // Check if this is the current player's score
+            const entryName = (entry.username || '').toLowerCase().trim();
+            const isMyScore = currentPlayerName && entryName === currentPlayerName;
+            const rowClass = isMyScore ? 'my-score' : '';
+            
             html += `
-                <tr>
+                <tr class="${rowClass}">
                     <td>${medal} ${rank}</td>
-                    <td>${entry.username || 'Anonymous'}</td>
+                    <td>${entry.username || 'Anonymous'}${isMyScore ? ' 👤' : ''}</td>
                     <td>${entry.score ? entry.score.toLocaleString() : 0}</td>
                     <td>${entry.quotes_completed || 0}</td>
                     <td>${timeDisplay}</td>
@@ -226,6 +237,16 @@ async function loadLeaderboardData(listEl) {
         
         html += '</tbody></table>';
         listEl.innerHTML = html;
+        
+        // Scroll to player's score if it exists
+        if (currentPlayerName) {
+            setTimeout(() => {
+                const myScoreRow = listEl.querySelector('tr.my-score');
+                if (myScoreRow) {
+                    myScoreRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 100);
+        }
     } catch (error) {
         console.error('Leaderboard error:', error);
         listEl.innerHTML = '<p class="error-message">Network error. Please try again.</p>';
