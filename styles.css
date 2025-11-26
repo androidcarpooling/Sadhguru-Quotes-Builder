@@ -998,6 +998,22 @@ body {
     border: 1px solid var(--border-color);
 }
 
+.game-completed-notice {
+    text-align: center;
+    padding: 30px;
+    background: var(--bg-secondary);
+    border-radius: 15px;
+    border: 2px solid #4ade80;
+    margin-top: 20px;
+}
+
+.game-completed-notice p {
+    font-size: 1.2rem;
+    color: #4ade80;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
 /* Toast Animations */
 @keyframes slideDown {
     from {

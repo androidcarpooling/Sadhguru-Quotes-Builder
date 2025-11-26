@@ -167,7 +167,27 @@ app.post('/api/login', (req, res) => {
     );
 });
 
+// Check if player can play (hasn't submitted a score yet)
+app.get('/api/player/:username/can-play', (req, res) => {
+    const username = req.params.username.trim().toLowerCase();
+    
+    db.get(
+        'SELECT COUNT(*) as count FROM leaderboard WHERE LOWER(username) = ?',
+        [username],
+        (err, row) => {
+            if (err) {
+                console.error('Error checking player:', err);
+                return res.status(500).json({ error: 'Database error' });
+            }
+            
+            const canPlay = row.count === 0;
+            res.json({ canPlay, hasPlayed: !canPlay });
+        }
+    );
+});
+
 // Submit Score (No authentication required - uses player name)
+// Only allows one score per player name
 app.post('/api/leaderboard', (req, res) => {
     const { score, quotes_completed, level, time_taken, username } = req.body;
 
@@ -185,48 +205,69 @@ app.post('/api/leaderboard', (req, res) => {
 
     // Sanitize username (max 50 chars, trim)
     const sanitizedUsername = username.trim().substring(0, 50) || 'Anonymous';
+    const normalizedUsername = sanitizedUsername.toLowerCase();
 
-    console.log('Inserting score into database:', { sanitizedUsername, score, quotes_completed, level, time_taken });
+    // Check if player has already submitted a score
+    db.get(
+        'SELECT id FROM leaderboard WHERE LOWER(username) = ?',
+        [normalizedUsername],
+        (checkErr, existingRow) => {
+            if (checkErr) {
+                console.error('Error checking existing score:', checkErr);
+                return res.status(500).json({ error: 'Database error', details: checkErr.message });
+            }
 
-    // First ensure table exists
-    db.run(`CREATE TABLE IF NOT EXISTS leaderboard (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        username TEXT NOT NULL,
-        score INTEGER NOT NULL,
-        quotes_completed INTEGER NOT NULL,
-        level INTEGER NOT NULL,
-        time_taken REAL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`, (createErr) => {
-        if (createErr) {
-            console.error('Error creating leaderboard table:', createErr);
-            return res.status(500).json({ error: 'Database setup error', details: createErr.message });
-        }
-
-        // Now insert the score
-        db.run(
-            'INSERT INTO leaderboard (user_id, username, score, quotes_completed, level, time_taken) VALUES (?, ?, ?, ?, ?, ?)',
-            [null, sanitizedUsername, score, quotes_completed, level || 1, time_taken || null],
-            function(err) {
-                if (err) {
-                    console.error('Database error saving score:', err);
-                    console.error('Error details:', {
-                        code: err.code,
-                        message: err.message,
-                        errno: err.errno
-                    });
-                    return res.status(500).json({ error: 'Failed to save score', details: err.message });
-                }
-
-                console.log('Score saved successfully with ID:', this.lastID);
-                res.json({
-                    message: 'Score saved successfully',
-                    scoreId: this.lastID
+            if (existingRow) {
+                console.log('Player already has a score:', sanitizedUsername);
+                return res.status(403).json({ 
+                    error: 'You have already completed a game! Only one attempt per player is allowed.',
+                    alreadyPlayed: true
                 });
             }
-        );
-    });
+
+            console.log('Inserting score into database:', { sanitizedUsername, score, quotes_completed, level, time_taken });
+
+            // First ensure table exists
+            db.run(`CREATE TABLE IF NOT EXISTS leaderboard (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                username TEXT NOT NULL,
+                score INTEGER NOT NULL,
+                quotes_completed INTEGER NOT NULL,
+                level INTEGER NOT NULL,
+                time_taken REAL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )`, (createErr) => {
+                if (createErr) {
+                    console.error('Error creating leaderboard table:', createErr);
+                    return res.status(500).json({ error: 'Database setup error', details: createErr.message });
+                }
+
+                // Now insert the score
+                db.run(
+                    'INSERT INTO leaderboard (user_id, username, score, quotes_completed, level, time_taken) VALUES (?, ?, ?, ?, ?, ?)',
+                    [null, sanitizedUsername, score, quotes_completed, level || 1, time_taken || null],
+                    function(err) {
+                        if (err) {
+                            console.error('Database error saving score:', err);
+                            console.error('Error details:', {
+                                code: err.code,
+                                message: err.message,
+                                errno: err.errno
+                            });
+                            return res.status(500).json({ error: 'Failed to save score', details: err.message });
+                        }
+
+                        console.log('Score saved successfully with ID:', this.lastID);
+                        res.json({
+                            message: 'Score saved successfully',
+                            scoreId: this.lastID
+                        });
+                    }
+                );
+            });
+        }
+    );
 });
 
 // Get Leaderboard

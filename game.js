@@ -22,6 +22,9 @@ let gameState = {
     playerName: '' // Player name entered at start
 };
 
+// API Base URL (needed for player check)
+const API_BASE_URL = window.location.origin;
+
 // Initialize Game
 function initGame() {
     // Game will start from start screen
@@ -34,13 +37,23 @@ function initGame() {
     jumbledArea.addEventListener('dragleave', handleJumbledDragLeave);
 }
 
-// Check if player has already completed a game
-function hasPlayerCompletedGame(playerName) {
-    const completedPlayers = JSON.parse(localStorage.getItem('completedPlayers') || '[]');
-    return completedPlayers.includes(playerName.toLowerCase().trim());
+// Check if player has already completed a game (server-side check)
+async function hasPlayerCompletedGame(playerName) {
+    if (!playerName) return false;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/player/${encodeURIComponent(playerName)}/can-play`);
+        const data = await response.json();
+        return !data.canPlay; // If can't play, they've already completed
+    } catch (error) {
+        console.error('Error checking player status:', error);
+        // Fallback to localStorage check
+        const completedPlayers = JSON.parse(localStorage.getItem('completedPlayers') || '[]');
+        return completedPlayers.includes(playerName.toLowerCase().trim());
+    }
 }
 
-// Mark player as completed
+// Mark player as completed (local storage backup)
 function markPlayerCompleted(playerName) {
     const completedPlayers = JSON.parse(localStorage.getItem('completedPlayers') || '[]');
     const normalizedName = playerName.toLowerCase().trim();
@@ -51,7 +64,7 @@ function markPlayerCompleted(playerName) {
 }
 
 // Start Game
-function startGame() {
+async function startGame() {
     const nameInput = document.getElementById('player-name-input');
     const playerName = nameInput.value.trim();
     const alreadyPlayedMsg = document.getElementById('already-played-message');
@@ -61,8 +74,13 @@ function startGame() {
         return;
     }
     
-    // Check if player has already completed a game
-    if (hasPlayerCompletedGame(playerName)) {
+    // Check if player has already completed a game (server-side check)
+    alreadyPlayedMsg.textContent = 'Checking...';
+    alreadyPlayedMsg.classList.remove('hidden');
+    
+    const hasPlayed = await hasPlayerCompletedGame(playerName);
+    
+    if (hasPlayed) {
         alreadyPlayedMsg.textContent = 'You have already completed a game! You can only view the leaderboard.';
         alreadyPlayedMsg.classList.remove('hidden');
         nameInput.disabled = true;
@@ -800,9 +818,18 @@ async function endGame() {
                 console.log('Score submitted successfully!');
                 // Mark player as completed - they can't play again
                 markPlayerCompleted(gameState.playerName);
+                // Disable game UI - only leaderboard accessible
+                disableGameUI();
             } else {
                 console.error('Score submission failed:', result.error);
-                showMessage('Failed to save score: ' + result.error, 'warning');
+                if (result.error && result.error.includes('already completed')) {
+                    // Player already played - disable game
+                    markPlayerCompleted(gameState.playerName);
+                    disableGameUI();
+                    showMessage('You have already completed a game!', 'warning');
+                } else {
+                    showMessage('Failed to save score: ' + result.error, 'warning');
+                }
             }
         } catch (error) {
             console.error('Error submitting score:', error);
@@ -871,7 +898,46 @@ function showEndGameModal(totalTime, scoreSubmitted = false) {
     if (actionsEl) {
         actionsEl.innerHTML = `
             <button class="btn btn-primary" onclick="closeResultModal(); setTimeout(() => { showLeaderboardModal(); setTimeout(() => loadLeaderboardData(), 300); }, 500);">View Leaderboard</button>
-            <button class="btn btn-secondary" onclick="closeResultModal(); document.getElementById('start-screen').classList.remove('hidden');">Back to Home</button>
+            <button class="btn btn-secondary" onclick="closeResultModal(); showLeaderboardOnlyView();">Back to Home</button>
+        `;
+    }
+}
+
+// Disable game UI after completion - only show leaderboard
+function disableGameUI() {
+    // Disable all game buttons
+    const checkButton = document.getElementById('check-button');
+    const endGameButton = document.getElementById('end-game-button');
+    const shuffleButtons = document.querySelectorAll('.btn-secondary');
+    
+    if (checkButton) checkButton.disabled = true;
+    if (endGameButton) endGameButton.disabled = true;
+    shuffleButtons.forEach(btn => {
+        if (btn.id.includes('shuffle')) btn.disabled = true;
+    });
+    
+    // Show completion notice
+    const notice = document.getElementById('game-completed-notice');
+    if (notice) {
+        notice.classList.remove('hidden');
+    }
+    
+    // Hide game interaction areas
+    const jumbledArea = document.getElementById('jumbled-words');
+    const quoteBuilder = document.getElementById('quote-builder');
+    if (jumbledArea) jumbledArea.style.pointerEvents = 'none';
+    if (quoteBuilder) quoteBuilder.style.pointerEvents = 'none';
+}
+
+// Show leaderboard-only view (game completed)
+function showLeaderboardOnlyView() {
+    document.getElementById('start-screen').classList.remove('hidden');
+    const startContent = document.querySelector('.start-content');
+    if (startContent) {
+        startContent.innerHTML = `
+            <h1>🧘 Sadhguru Quotes Builder</h1>
+            <p class="start-description">You have completed the game! View the leaderboard to see all scores.</p>
+            <button class="btn btn-primary btn-large" onclick="showLeaderboardModal()">🏆 View Leaderboard</button>
         `;
     }
     

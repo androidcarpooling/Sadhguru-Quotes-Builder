@@ -73,6 +73,10 @@
                     <button id="shuffle-arranged-button" class="btn btn-secondary" onclick="shuffleArrangedWords()">🔄 Reorder Quote</button>
                     <button id="end-game-button" class="btn btn-secondary" onclick="endGame()" title="End game and record your score">🏁 End Game</button>
                 </div>
+                <div id="game-completed-notice" class="game-completed-notice hidden">
+                    <p>🎉 Game Completed! You can only view the leaderboard now.</p>
+                    <button class="btn btn-primary" onclick="showLeaderboardModal()">View Leaderboard</button>
+                </div>
             </div>
 
             <!-- Right: Instructions & Info -->
@@ -182,7 +186,7 @@
     </div>
 
     <script src="quotes-data.js?v=8.0"></script>
-    <script src="auth.js?v=5.0"></script>
-    <script src="game.js?v=16.0"></script>
+    <script src="auth.js?v=6.0"></script>
+    <script src="game.js?v=17.0"></script>
 </body>
 </html>
