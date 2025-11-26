@@ -78,14 +78,21 @@ async function startGame() {
     alreadyPlayedMsg.textContent = 'Checking...';
     alreadyPlayedMsg.classList.remove('hidden');
     
-    const hasPlayed = await hasPlayerCompletedGame(playerName);
-    
-    if (hasPlayed) {
-        alreadyPlayedMsg.textContent = 'You have already completed a game! Click "View My Score" to see your leaderboard position.';
+    try {
+        const hasPlayed = await hasPlayerCompletedGame(playerName);
+        
+        if (hasPlayed) {
+            alreadyPlayedMsg.textContent = 'You have already completed a game! Click "View My Score" to see your leaderboard position.';
+            alreadyPlayedMsg.classList.remove('hidden');
+            nameInput.disabled = false;
+            nameInput.style.opacity = '1';
+            // Don't auto-show leaderboard, let them click "View My Score"
+            return;
+        }
+    } catch (error) {
+        console.error('Error checking if player has played:', error);
+        alreadyPlayedMsg.textContent = 'Error checking status. Please try again.';
         alreadyPlayedMsg.classList.remove('hidden');
-        nameInput.disabled = false;
-        nameInput.style.opacity = '1';
-        // Don't auto-show leaderboard, let them click "View My Score"
         return;
     }
     
@@ -1106,6 +1113,7 @@ if (!document.getElementById('toast-animations')) {
 
 // View My Score - for returning players (global function)
 async function viewMyScore() {
+    console.log('viewMyScore called');
     const nameInput = document.getElementById('player-name-input');
     const playerName = nameInput.value.trim();
     const alreadyPlayedMsg = document.getElementById('already-played-message');
@@ -1164,6 +1172,9 @@ async function viewMyScore() {
         alreadyPlayedMsg.classList.remove('hidden');
     }
 }
+
+// Make viewMyScore globally accessible
+window.viewMyScore = viewMyScore;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
