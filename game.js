@@ -1123,52 +1123,70 @@ async function viewMyScore() {
         return;
     }
     
+    console.log('Checking player:', playerName);
+    
     // Check if player has already completed a game
     alreadyPlayedMsg.textContent = 'Checking...';
     alreadyPlayedMsg.classList.remove('hidden');
     
     try {
         const hasPlayed = await hasPlayerCompletedGame(playerName);
+        console.log('Has played:', hasPlayed);
+        
+        // Store player name for highlighting in leaderboard (always, so leaderboard can highlight)
+        gameState.playerName = playerName;
+        
+        // Always show leaderboard, but highlight if they've played
+        alreadyPlayedMsg.textContent = '';
+        alreadyPlayedMsg.classList.add('hidden');
+        
+        // Show leaderboard - try multiple methods
+        const modal = document.getElementById('leaderboard-modal');
+        const listEl = document.getElementById('leaderboard-list');
+        
+        console.log('Modal element:', modal);
+        console.log('List element:', listEl);
+        
+        if (!modal) {
+            console.error('Leaderboard modal not found!');
+            alreadyPlayedMsg.textContent = 'Error: Leaderboard modal not found. Please refresh the page.';
+            alreadyPlayedMsg.classList.remove('hidden');
+            return;
+        }
+        
+        if (!listEl) {
+            console.error('Leaderboard list element not found!');
+            alreadyPlayedMsg.textContent = 'Error: Leaderboard list not found. Please refresh the page.';
+            alreadyPlayedMsg.classList.remove('hidden');
+            return;
+        }
+        
+        // Show modal
+        modal.classList.remove('hidden');
+        console.log('Modal shown, loading data...');
+        
+        // Load leaderboard data
+        if (typeof window.loadLeaderboardData === 'function') {
+            console.log('Using window.loadLeaderboardData');
+            await window.loadLeaderboardData(listEl);
+        } else if (typeof loadLeaderboardData === 'function') {
+            console.log('Using loadLeaderboardData');
+            await loadLeaderboardData(listEl);
+        } else {
+            console.error('loadLeaderboardData function not found!');
+            listEl.innerHTML = '<p class="error-message">Error: Could not load leaderboard function. Please refresh the page.</p>';
+            return;
+        }
         
         if (hasPlayed) {
-            // Store player name for highlighting in leaderboard
-            gameState.playerName = playerName;
-            alreadyPlayedMsg.textContent = '';
-            alreadyPlayedMsg.classList.add('hidden');
-            
-            // Show leaderboard with their score highlighted
-            // Make sure showLeaderboardModal is available (from auth.js)
-            if (typeof window.showLeaderboardModal === 'function') {
-                await window.showLeaderboardModal();
-                showMessage(`Welcome back, ${playerName}! Here's your score on the leaderboard.`, 'info');
-            } else {
-                // Fallback: try direct call
-                const modal = document.getElementById('leaderboard-modal');
-                const listEl = document.getElementById('leaderboard-list');
-                if (modal && listEl) {
-                    modal.classList.remove('hidden');
-                    if (typeof loadLeaderboardData === 'function') {
-                        await loadLeaderboardData(listEl);
-                        showMessage(`Welcome back, ${playerName}! Here's your score on the leaderboard.`, 'info');
-                    } else {
-                        alreadyPlayedMsg.textContent = 'Error: Could not load leaderboard. Please refresh the page.';
-                        alreadyPlayedMsg.classList.remove('hidden');
-                    }
-                } else {
-                    alreadyPlayedMsg.textContent = 'Error: Leaderboard modal not found. Please refresh the page.';
-                    alreadyPlayedMsg.classList.remove('hidden');
-                }
-            }
+            showMessage(`Welcome back, ${playerName}! Here's your score on the leaderboard.`, 'info');
         } else {
-            alreadyPlayedMsg.textContent = 'You haven\'t played yet! Click "Start Playing" to begin.';
-            alreadyPlayedMsg.classList.remove('hidden');
-            setTimeout(() => {
-                alreadyPlayedMsg.classList.add('hidden');
-            }, 3000);
+            showMessage(`Hello ${playerName}! You haven't played yet. Click "Start Playing" to begin.`, 'info');
         }
+        
     } catch (error) {
         console.error('Error in viewMyScore:', error);
-        alreadyPlayedMsg.textContent = 'Error checking your status. Please try again.';
+        alreadyPlayedMsg.textContent = 'Error checking your status: ' + error.message;
         alreadyPlayedMsg.classList.remove('hidden');
     }
 }

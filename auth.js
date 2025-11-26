@@ -178,6 +178,7 @@ async function submitScore(score, quotesCompleted, level, timeTaken, playerName)
 
 // Show Leaderboard Modal (global function)
 async function showLeaderboardModal() {
+    console.log('showLeaderboardModal called');
     const modal = document.getElementById('leaderboard-modal');
     if (!modal) {
         console.error('Leaderboard modal not found');
@@ -192,8 +193,10 @@ async function showLeaderboardModal() {
         return;
     }
     
+    console.log('Showing modal and loading data...');
     modal.classList.remove('hidden');
     await loadLeaderboardData(listEl);
+    console.log('Leaderboard data loaded');
 }
 
 // Make it globally accessible
@@ -201,25 +204,44 @@ window.showLeaderboardModal = showLeaderboardModal;
 
 // Load Leaderboard Data (separate function for reuse, global)
 async function loadLeaderboardData(listEl) {
+    console.log('loadLeaderboardData called with listEl:', listEl);
+    
     if (!listEl) {
         listEl = document.getElementById('leaderboard-list');
+        console.log('Got listEl from DOM:', listEl);
+    }
+    
+    if (!listEl) {
+        console.error('No listEl element found!');
+        return;
     }
     
     listEl.innerHTML = '<p>Loading leaderboard...</p>';
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/leaderboard?limit=50&t=${Date.now()}`);
+        const apiUrl = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : window.location.origin;
+        const url = `${apiUrl}/api/leaderboard?limit=50&t=${Date.now()}`;
+        console.log('Fetching leaderboard from:', url);
+        
+        const response = await fetch(url);
+        console.log('Response status:', response.status, response.statusText);
+        
         const data = await response.json();
+        console.log('Leaderboard data received:', data);
 
         if (!response.ok) {
-            listEl.innerHTML = '<p class="error-message">Failed to load leaderboard</p>';
+            console.error('Failed to load leaderboard:', response.status, data);
+            listEl.innerHTML = `<p class="error-message">Failed to load leaderboard: ${data.error || response.statusText}</p>`;
             return;
         }
 
         if (!data.leaderboard || data.leaderboard.length === 0) {
+            console.log('No leaderboard data');
             listEl.innerHTML = '<p>No scores yet. Be the first!</p>';
             return;
         }
+        
+        console.log('Rendering leaderboard with', data.leaderboard.length, 'entries');
 
         // Get current player name from gameState (if available)
         const currentPlayerName = typeof gameState !== 'undefined' && gameState.playerName 
@@ -264,7 +286,11 @@ async function loadLeaderboardData(listEl) {
         }
     } catch (error) {
         console.error('Leaderboard error:', error);
-        listEl.innerHTML = '<p class="error-message">Network error. Please try again.</p>';
+        if (listEl) {
+            listEl.innerHTML = `<p class="error-message">Network error: ${error.message}. Please try again.</p>`;
+        } else {
+            console.error('Cannot display error - listEl is null');
+        }
     }
 }
 
