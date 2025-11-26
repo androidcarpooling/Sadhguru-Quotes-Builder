@@ -189,10 +189,19 @@ async function showLeaderboardModal() {
     const modal = document.getElementById('leaderboard-modal');
     const listEl = document.getElementById('leaderboard-list');
     modal.classList.remove('hidden');
+    await loadLeaderboardData(listEl);
+}
+
+// Load Leaderboard Data (separate function for reuse)
+async function loadLeaderboardData(listEl) {
+    if (!listEl) {
+        listEl = document.getElementById('leaderboard-list');
+    }
+    
     listEl.innerHTML = '<p>Loading leaderboard...</p>';
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/leaderboard?limit=50`);
+        const response = await fetch(`${API_BASE_URL}/api/leaderboard?limit=50&t=${Date.now()}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -200,23 +209,24 @@ async function showLeaderboardModal() {
             return;
         }
 
-        if (data.leaderboard.length === 0) {
+        if (!data.leaderboard || data.leaderboard.length === 0) {
             listEl.innerHTML = '<p>No scores yet. Be the first!</p>';
             return;
         }
 
-        let html = '<table class="leaderboard-table"><thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Quotes</th><th>Time</th></tr></thead><tbody>';
+        let html = '<div style="margin-bottom: 15px;"><button class="btn btn-secondary btn-small" onclick="loadLeaderboardData()">🔄 Refresh</button></div>';
+        html += '<table class="leaderboard-table"><thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Quotes</th><th>Time</th></tr></thead><tbody>';
         
         data.leaderboard.forEach((entry, index) => {
             const rank = index + 1;
             const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
-            const timeDisplay = entry.time_taken ? `${entry.time_taken.toFixed(1)}s` : '-';
+            const timeDisplay = entry.time_taken ? `${parseFloat(entry.time_taken).toFixed(1)}s` : '-';
             html += `
                 <tr>
                     <td>${medal} ${rank}</td>
-                    <td>${entry.username}</td>
-                    <td>${entry.score.toLocaleString()}</td>
-                    <td>${entry.quotes_completed}</td>
+                    <td>${entry.username || 'Anonymous'}</td>
+                    <td>${entry.score ? entry.score.toLocaleString() : 0}</td>
+                    <td>${entry.quotes_completed || 0}</td>
                     <td>${timeDisplay}</td>
                 </tr>
             `;
@@ -225,6 +235,7 @@ async function showLeaderboardModal() {
         html += '</tbody></table>';
         listEl.innerHTML = html;
     } catch (error) {
+        console.error('Leaderboard error:', error);
         listEl.innerHTML = '<p class="error-message">Network error. Please try again.</p>';
     }
 }

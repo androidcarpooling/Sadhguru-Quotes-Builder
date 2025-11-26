@@ -854,7 +854,7 @@ function showEndGameModal(totalTime, scoreSubmitted = false) {
     // Update actions
     if (actionsEl) {
         actionsEl.innerHTML = `
-            <button class="btn btn-primary" onclick="closeResultModal(); setTimeout(() => showLeaderboardModal(), 300);">View Leaderboard</button>
+            <button class="btn btn-primary" onclick="closeResultModal(); setTimeout(() => { showLeaderboardModal(); loadLeaderboardData(); }, 500);">View Leaderboard</button>
             <button class="btn btn-secondary" onclick="closeResultModal(); document.getElementById('start-screen').classList.remove('hidden');">Play Again</button>
         `;
     }
