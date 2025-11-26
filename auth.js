@@ -176,15 +176,30 @@ async function submitScore(score, quotesCompleted, level, timeTaken, playerName)
     }
 }
 
-// Show Leaderboard Modal
+// Show Leaderboard Modal (global function)
 async function showLeaderboardModal() {
     const modal = document.getElementById('leaderboard-modal');
+    if (!modal) {
+        console.error('Leaderboard modal not found');
+        alert('Leaderboard modal not found. Please refresh the page.');
+        return;
+    }
+    
     const listEl = document.getElementById('leaderboard-list');
+    if (!listEl) {
+        console.error('Leaderboard list element not found');
+        alert('Leaderboard list element not found. Please refresh the page.');
+        return;
+    }
+    
     modal.classList.remove('hidden');
     await loadLeaderboardData(listEl);
 }
 
-// Load Leaderboard Data (separate function for reuse)
+// Make it globally accessible
+window.showLeaderboardModal = showLeaderboardModal;
+
+// Load Leaderboard Data (separate function for reuse, global)
 async function loadLeaderboardData(listEl) {
     if (!listEl) {
         listEl = document.getElementById('leaderboard-list');
@@ -211,7 +226,7 @@ async function loadLeaderboardData(listEl) {
             ? gameState.playerName.toLowerCase().trim() 
             : null;
 
-        let html = '<div style="margin-bottom: 15px;"><button class="btn btn-secondary btn-small" onclick="loadLeaderboardData()">🔄 Refresh</button></div>';
+        let html = '<div style="margin-bottom: 15px;"><button class="btn btn-secondary btn-small" onclick="window.loadLeaderboardData && window.loadLeaderboardData(document.getElementById(\'leaderboard-list\'))">🔄 Refresh</button></div>';
         html += '<table class="leaderboard-table"><thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Quotes</th><th>Time</th></tr></thead><tbody>';
         
         data.leaderboard.forEach((entry, index) => {
@@ -253,10 +268,14 @@ async function loadLeaderboardData(listEl) {
     }
 }
 
-// Close Leaderboard Modal
+// Close Leaderboard Modal (global)
 function closeLeaderboardModal() {
     document.getElementById('leaderboard-modal').classList.add('hidden');
 }
+
+// Make functions globally accessible
+window.loadLeaderboardData = loadLeaderboardData;
+window.closeLeaderboardModal = closeLeaderboardModal;
 
 // Initialize on page load (no auth needed, but keep for compatibility)
 document.addEventListener('DOMContentLoaded', () => {
