@@ -170,17 +170,24 @@ app.post('/api/login', (req, res) => {
     );
 });
 
-// Submit Score (Protected)
-app.post('/api/leaderboard', authenticateToken, (req, res) => {
-    const { score, quotes_completed, level, time_taken } = req.body;
+// Submit Score (No authentication required - uses player name)
+app.post('/api/leaderboard', (req, res) => {
+    const { score, quotes_completed, level, time_taken, username } = req.body;
 
     if (typeof score !== 'number' || typeof quotes_completed !== 'number') {
         return res.status(400).json({ error: 'Invalid score data' });
     }
 
+    if (!username || username.trim().length === 0) {
+        return res.status(400).json({ error: 'Username is required' });
+    }
+
+    // Sanitize username (max 50 chars, trim)
+    const sanitizedUsername = username.trim().substring(0, 50) || 'Anonymous';
+
     db.run(
         'INSERT INTO leaderboard (user_id, username, score, quotes_completed, level, time_taken) VALUES (?, ?, ?, ?, ?, ?)',
-        [req.user.id, req.user.username, score, quotes_completed, level || 1, time_taken || null],
+        [null, sanitizedUsername, score, quotes_completed, level || 1, time_taken || null],
         function(err) {
             if (err) {
                 return res.status(500).json({ error: 'Failed to save score' });

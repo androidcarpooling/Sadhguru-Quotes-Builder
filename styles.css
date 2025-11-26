@@ -203,6 +203,34 @@ body {
     text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
 }
 
+.progress-preview {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 25px;
+    background: rgba(102, 126, 234, 0.1);
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    border-radius: 15px;
+}
+
+.progress-label {
+    font-weight: 700;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#quote-progress {
+    font-size: 1.8rem;
+    font-weight: 800;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-family: 'Courier New', monospace;
+}
+
 /* Main Game Area */
 .main-game-area {
     display: grid;
@@ -923,9 +951,40 @@ body {
 .start-description {
     font-size: 1.3rem;
     line-height: 1.9;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
     color: var(--text-secondary);
     font-weight: 500;
+}
+
+.name-input-section {
+    margin-bottom: 30px;
+    width: 100%;
+}
+
+.name-input {
+    width: 100%;
+    max-width: 400px;
+    padding: 15px 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background: rgba(22, 33, 62, 0.8);
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    text-align: center;
+    transition: var(--transition);
+    margin-bottom: 10px;
+}
+
+.name-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.name-hint {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin: 0;
 }
 
 /* Toast Animations */

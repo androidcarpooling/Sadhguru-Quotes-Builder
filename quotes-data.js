@@ -80,5 +80,8 @@ const SADHGURU_QUOTES = [
     }
 ];
 
-// Use all quotes (no filtering by length)
-const SADHGURU_QUOTES_FILTERED = SADHGURU_QUOTES;
+// Filter out quotes with less than 3 words
+const SADHGURU_QUOTES_FILTERED = SADHGURU_QUOTES.filter(q => {
+    const wordCount = q.quote.trim().split(/\s+/).length;
+    return wordCount >= 3;
+});

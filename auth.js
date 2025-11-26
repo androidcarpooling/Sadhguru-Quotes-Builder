@@ -146,29 +146,33 @@ function logout() {
     showMessage('Logged out successfully', 'info');
 }
 
-// Submit Score to Leaderboard
-async function submitScore(score, quotesCompleted, level, timeTaken) {
-    if (!authState.token) {
-        return; // User not logged in, skip submission
+// Submit Score to Leaderboard (No authentication required - uses player name)
+async function submitScore(score, quotesCompleted, level, timeTaken, playerName) {
+    if (!playerName) {
+        console.log('No player name provided, skipping score submission');
+        return;
     }
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/leaderboard`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authState.token}`
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 score,
                 quotes_completed: quotesCompleted,
                 level,
-                time_taken: timeTaken
+                time_taken: timeTaken,
+                username: playerName
             })
         });
 
         if (response.ok) {
             console.log('Score submitted successfully');
+        } else {
+            const error = await response.json();
+            console.error('Failed to submit score:', error);
         }
     } catch (error) {
         console.error('Failed to submit score:', error);

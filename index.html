@@ -30,10 +30,6 @@
                     </div>
                 </div>
                 <div class="auth-section">
-                    <span id="user-info" class="user-info hidden"></span>
-                    <button id="login-btn" class="btn btn-secondary btn-small" onclick="showLoginModal()">Login</button>
-                    <button id="register-btn" class="btn btn-secondary btn-small" onclick="showRegisterModal()">Sign Up</button>
-                    <button id="logout-btn" class="btn btn-secondary btn-small hidden" onclick="logout()">Logout</button>
                     <button id="leaderboard-btn" class="btn btn-secondary btn-small" onclick="showLeaderboardModal()">🏆 Leaderboard</button>
                 </div>
             </div>
@@ -48,6 +44,10 @@
             <div class="score-preview">
                 <span class="score-label">Current Score:</span>
                 <span id="current-score">0</span>
+            </div>
+            <div class="progress-preview">
+                <span class="progress-label">Progress:</span>
+                <span id="quote-progress">0 / 10</span>
             </div>
         </div>
 
@@ -71,6 +71,7 @@
                     <button id="check-button" class="btn btn-primary" onclick="checkQuote()">✓ Check Answer</button>
                     <button id="shuffle-jumbled-button" class="btn btn-secondary" onclick="shuffleJumbledWords()">🔀 Shuffle Jumbled</button>
                     <button id="shuffle-arranged-button" class="btn btn-secondary" onclick="shuffleArrangedWords()">🔄 Reorder Quote</button>
+                    <button id="end-game-button" class="btn btn-secondary" onclick="endGame()" title="End game and record your score">🏁 End Game</button>
                 </div>
             </div>
 
@@ -109,7 +110,9 @@
             <div class="modal-content result-content">
                 <button class="close-btn" onclick="closeResultModal()">×</button>
                 <div id="result-content"></div>
-                <button class="btn btn-primary" onclick="nextQuote()">Next Quote →</button>
+                <div id="result-actions">
+                    <button id="next-quote-btn" class="btn btn-primary" onclick="nextQuote()">Next Quote →</button>
+                </div>
             </div>
         </div>
 
@@ -126,6 +129,10 @@
             <div class="start-content">
                 <h1>🧘 Sadhguru Quotes Builder</h1>
                 <p class="start-description">Unscramble the wisdom of Sadhguru! Arrange jumbled words to form inspiring quotes. The faster you complete, the higher your score!</p>
+                <div class="name-input-section">
+                    <input type="text" id="player-name-input" placeholder="Enter your name" maxlength="50" class="name-input">
+                    <p class="name-hint">Enter your name to appear on the leaderboard</p>
+                </div>
                 <button class="btn btn-primary btn-large" onclick="startGame()">Start Playing</button>
             </div>
         </div>
@@ -171,8 +178,8 @@
         </div>
     </div>
 
-    <script src="quotes-data.js?v=7.0"></script>
-    <script src="auth.js?v=1.0"></script>
-    <script src="game.js?v=9.0"></script>
+    <script src="quotes-data.js?v=8.0"></script>
+    <script src="auth.js?v=2.0"></script>
+    <script src="game.js?v=11.0"></script>
 </body>
 </html>

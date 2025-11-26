@@ -1,3 +1,7 @@
+// Game Configuration
+const MAX_QUOTES_PER_GAME = 7;
+const GAME_TIME_LIMIT = 3 * 60 * 1000; // 3 minutes in milliseconds
+
 // Game State
 let gameState = {
     currentQuote: null,
@@ -7,12 +11,15 @@ let gameState = {
     correctOrder: [],
     revealedIndices: [], // Indices of words that are revealed as hints
     startTime: null,
+    gameStartTime: null, // Track total game time
     timer: null,
+    gameTimer: null, // Timer for 3-minute limit
     totalScore: 0,
     currentScore: 0,
     level: 1,
     quotesCompleted: 0,
-    usedQuotes: new Set()
+    usedQuotes: new Set(),
+    playerName: '' // Player name entered at start
 };
 
 // Initialize Game
@@ -29,8 +36,52 @@ function initGame() {
 
 // Start Game
 function startGame() {
+    const nameInput = document.getElementById('player-name-input');
+    const playerName = nameInput.value.trim();
+    
+    if (!playerName) {
+        showMessage('Please enter your name to start playing!', 'warning');
+        return;
+    }
+    
+    gameState.playerName = playerName;
     document.getElementById('start-screen').classList.add('hidden');
+    
+    // Reset game state
+    gameState.totalScore = 0;
+    gameState.quotesCompleted = 0;
+    gameState.level = 1;
+    gameState.usedQuotes.clear();
+    gameState.gameStartTime = Date.now();
+    updateStats();
+    
+    // Start 3-minute timer
+    startGameTimer();
+    
     loadNewQuote();
+}
+
+// Start 3-minute game timer
+function startGameTimer() {
+    // Clear any existing timer
+    if (gameState.gameTimer) {
+        clearInterval(gameState.gameTimer);
+    }
+    
+    gameState.gameTimer = setTimeout(() => {
+        showMessage('Time\'s up! Game ending...', 'info');
+        setTimeout(() => {
+            endGame();
+        }, 1000);
+    }, GAME_TIME_LIMIT);
+}
+
+// Stop game timer
+function stopGameTimer() {
+    if (gameState.gameTimer) {
+        clearTimeout(gameState.gameTimer);
+        gameState.gameTimer = null;
+    }
 }
 
 // Load New Quote
@@ -681,6 +732,20 @@ function showResult(scoreBreakdown, timeTaken, accuracy, isCorrect) {
         ${isCorrect ? '<p class="result-message success">Well done! You arranged it perfectly!</p>' : '<p class="result-message error">Try again to get a perfect score!</p>'}
     `;
     
+    // Update button based on progress
+    const nextBtn = document.getElementById('next-quote-btn');
+    if (nextBtn) {
+        if (gameState.quotesCompleted >= MAX_QUOTES_PER_GAME - 1) {
+            nextBtn.textContent = 'Finish Game →';
+            nextBtn.onclick = () => {
+                nextQuote(); // This will trigger endGame()
+            };
+        } else {
+            nextBtn.textContent = 'Next Quote →';
+            nextBtn.onclick = nextQuote;
+        }
+    }
+    
     modal.classList.remove('hidden');
 }
 
@@ -696,13 +761,80 @@ function nextQuote() {
     gameState.level = Math.floor(gameState.quotesCompleted / 5) + 1;
     updateStats();
     
-    // Submit score to leaderboard if user is logged in
-    if (typeof submitScore === 'function') {
-        const timeTaken = getTimeTaken();
-        submitScore(gameState.totalScore, gameState.quotesCompleted, gameState.level, timeTaken);
+    // Check if reached max quotes (10)
+    if (gameState.quotesCompleted >= MAX_QUOTES_PER_GAME) {
+        endGame();
+        return;
     }
     
     loadNewQuote();
+}
+
+// End Game - Record final score
+function endGame() {
+    stopTimer();
+    stopGameTimer();
+    const totalTime = gameState.gameStartTime ? (Date.now() - gameState.gameStartTime) / 1000 : 0;
+    
+    // Submit final score to leaderboard with player name
+    if (typeof submitScore === 'function' && gameState.playerName) {
+        submitScore(gameState.totalScore, gameState.quotesCompleted, gameState.level, totalTime, gameState.playerName);
+    }
+    
+    // Show end game modal
+    showEndGameModal(totalTime);
+}
+
+// Show End Game Modal
+function showEndGameModal(totalTime) {
+    const modal = document.getElementById('result-modal');
+    const content = document.getElementById('result-content');
+    
+    content.innerHTML = `
+        <h2>🎉 Game Complete! 🎉</h2>
+        <div class="final-quote">
+            You completed ${gameState.quotesCompleted} quotes!
+        </div>
+        <div class="result-stats">
+            <div class="result-stat">
+                <div class="result-stat-label">Total Score</div>
+                <div class="result-stat-value">${gameState.totalScore.toLocaleString()}</div>
+            </div>
+            <div class="result-stat">
+                <div class="result-stat-label">Quotes Completed</div>
+                <div class="result-stat-value">${gameState.quotesCompleted}</div>
+            </div>
+            <div class="result-stat">
+                <div class="result-stat-label">Total Time</div>
+                <div class="result-stat-value">${totalTime.toFixed(1)}s</div>
+            </div>
+        </div>
+        <div class="score-breakdown">
+            <h4>Final Stats:</h4>
+            <div class="breakdown-item">
+                <span class="breakdown-label">Level Reached:</span>
+                <span class="breakdown-value">${gameState.level}</span>
+            </div>
+            <div class="breakdown-item">
+                <span class="breakdown-label">Average Score per Quote:</span>
+                <span class="breakdown-value">${Math.floor(gameState.totalScore / gameState.quotesCompleted)}</span>
+            </div>
+        </div>
+        <p class="result-message success">Your score has been saved to the leaderboard as "${gameState.playerName}"!</p>
+        <button class="btn btn-primary" onclick="showLeaderboardModal(); closeResultModal();" style="margin-top: 15px;">View Leaderboard</button>
+    `;
+    
+    // Change button text
+    const nextBtn = modal.querySelector('.btn-primary');
+    if (nextBtn) {
+        nextBtn.textContent = 'Play Again';
+        nextBtn.onclick = () => {
+            closeResultModal();
+            startGame();
+        };
+    }
+    
+    modal.classList.remove('hidden');
 }
 
 // Update Stats
@@ -711,6 +843,10 @@ function updateStats() {
     document.getElementById('current-level').textContent = gameState.level;
     document.getElementById('quotes-completed').textContent = gameState.quotesCompleted;
     document.getElementById('current-score').textContent = gameState.currentScore || 0;
+    const progressEl = document.getElementById('quote-progress');
+    if (progressEl) {
+        progressEl.textContent = `${gameState.quotesCompleted} / ${MAX_QUOTES_PER_GAME}`;
+    }
 }
 
 // Show Message
