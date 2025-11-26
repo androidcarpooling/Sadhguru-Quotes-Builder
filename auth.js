@@ -200,18 +200,19 @@ async function showLeaderboardModal() {
             return;
         }
 
-        let html = '<table class="leaderboard-table"><thead><tr><th>Rank</th><th>Username</th><th>Score</th><th>Quotes</th><th>Level</th></tr></thead><tbody>';
+        let html = '<table class="leaderboard-table"><thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Quotes</th><th>Time</th></tr></thead><tbody>';
         
         data.leaderboard.forEach((entry, index) => {
             const rank = index + 1;
             const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
+            const timeDisplay = entry.time_taken ? `${entry.time_taken.toFixed(1)}s` : '-';
             html += `
-                <tr ${authState.user && entry.username === authState.user.username ? 'class="my-score"' : ''}>
+                <tr>
                     <td>${medal} ${rank}</td>
                     <td>${entry.username}</td>
                     <td>${entry.score.toLocaleString()}</td>
                     <td>${entry.quotes_completed}</td>
-                    <td>${entry.level}</td>
+                    <td>${timeDisplay}</td>
                 </tr>
             `;
         });

@@ -515,6 +515,13 @@ function startTimer() {
     gameState.timer = setInterval(() => {
         const elapsed = (Date.now() - gameState.startTime) / 1000;
         document.getElementById('timer').textContent = elapsed.toFixed(1) + 's';
+        
+        // Show warning when approaching 3-minute limit
+        const totalElapsed = gameState.gameStartTime ? (Date.now() - gameState.gameStartTime) / 1000 : 0;
+        const timeLeft = GAME_TIME_LIMIT / 1000 - totalElapsed;
+        if (timeLeft <= 30 && timeLeft > 0 && Math.floor(timeLeft) % 10 === 0) {
+            showMessage(`⏰ ${Math.floor(timeLeft)} seconds remaining!`, 'warning');
+        }
     }, 100);
 }
 
@@ -741,7 +748,7 @@ function showResult(scoreBreakdown, timeTaken, accuracy, isCorrect) {
                 nextQuote(); // This will trigger endGame()
             };
         } else {
-            nextBtn.textContent = 'Next Quote →';
+            nextBtn.textContent = `Next Quote → (${MAX_QUOTES_PER_GAME - gameState.quotesCompleted - 1} left)`;
             nextBtn.onclick = nextQuote;
         }
     }
@@ -789,11 +796,17 @@ function endGame() {
 function showEndGameModal(totalTime) {
     const modal = document.getElementById('result-modal');
     const content = document.getElementById('result-content');
+    const actionsEl = document.getElementById('result-actions');
+    
+    const avgScore = gameState.quotesCompleted > 0 ? Math.floor(gameState.totalScore / gameState.quotesCompleted) : 0;
+    const minutes = Math.floor(totalTime / 60);
+    const seconds = Math.floor(totalTime % 60);
+    const timeDisplay = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
     
     content.innerHTML = `
         <h2>🎉 Game Complete! 🎉</h2>
         <div class="final-quote">
-            You completed ${gameState.quotesCompleted} quotes!
+            You completed ${gameState.quotesCompleted} out of ${MAX_QUOTES_PER_GAME} quotes!
         </div>
         <div class="result-stats">
             <div class="result-stat">
@@ -802,11 +815,11 @@ function showEndGameModal(totalTime) {
             </div>
             <div class="result-stat">
                 <div class="result-stat-label">Quotes Completed</div>
-                <div class="result-stat-value">${gameState.quotesCompleted}</div>
+                <div class="result-stat-value">${gameState.quotesCompleted} / ${MAX_QUOTES_PER_GAME}</div>
             </div>
             <div class="result-stat">
                 <div class="result-stat-label">Total Time</div>
-                <div class="result-stat-value">${totalTime.toFixed(1)}s</div>
+                <div class="result-stat-value">${timeDisplay}</div>
             </div>
         </div>
         <div class="score-breakdown">
@@ -817,21 +830,18 @@ function showEndGameModal(totalTime) {
             </div>
             <div class="breakdown-item">
                 <span class="breakdown-label">Average Score per Quote:</span>
-                <span class="breakdown-value">${Math.floor(gameState.totalScore / gameState.quotesCompleted)}</span>
+                <span class="breakdown-value">${avgScore}</span>
             </div>
         </div>
         <p class="result-message success">Your score has been saved to the leaderboard as "${gameState.playerName}"!</p>
-        <button class="btn btn-primary" onclick="showLeaderboardModal(); closeResultModal();" style="margin-top: 15px;">View Leaderboard</button>
     `;
     
-    // Change button text
-    const nextBtn = modal.querySelector('.btn-primary');
-    if (nextBtn) {
-        nextBtn.textContent = 'Play Again';
-        nextBtn.onclick = () => {
-            closeResultModal();
-            startGame();
-        };
+    // Update actions
+    if (actionsEl) {
+        actionsEl.innerHTML = `
+            <button class="btn btn-primary" onclick="showLeaderboardModal(); closeResultModal();">View Leaderboard</button>
+            <button class="btn btn-secondary" onclick="closeResultModal(); document.getElementById('start-screen').classList.remove('hidden');">Play Again</button>
+        `;
     }
     
     modal.classList.remove('hidden');
