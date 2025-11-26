@@ -16,25 +16,11 @@ function initAuth() {
     }
 }
 
-// Update Auth UI
+// Update Auth UI (no longer needed since we removed login, but keep for compatibility)
 function updateAuthUI(isLoggedIn) {
-    const loginBtn = document.getElementById('login-btn');
-    const registerBtn = document.getElementById('register-btn');
-    const logoutBtn = document.getElementById('logout-btn');
-    const userInfo = document.getElementById('user-info');
-
-    if (isLoggedIn && authState.user) {
-        loginBtn.classList.add('hidden');
-        registerBtn.classList.add('hidden');
-        logoutBtn.classList.remove('hidden');
-        userInfo.classList.remove('hidden');
-        userInfo.textContent = `👤 ${authState.user.username}`;
-    } else {
-        loginBtn.classList.remove('hidden');
-        registerBtn.classList.remove('hidden');
-        logoutBtn.classList.add('hidden');
-        userInfo.classList.add('hidden');
-    }
+    // Auth UI elements removed - no login required
+    // This function kept for compatibility but does nothing
+    return;
 }
 
 // Show Login Modal
@@ -251,8 +237,8 @@ function closeLeaderboardModal() {
     document.getElementById('leaderboard-modal').classList.add('hidden');
 }
 
-// Initialize on page load
+// Initialize on page load (no auth needed, but keep for compatibility)
 document.addEventListener('DOMContentLoaded', () => {
-    initAuth();
+    // No auth initialization needed - players just enter name
 });
 

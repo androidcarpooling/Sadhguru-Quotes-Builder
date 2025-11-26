@@ -22,8 +22,7 @@ let gameState = {
     playerName: '' // Player name entered at start
 };
 
-// API Base URL (needed for player check)
-const API_BASE_URL = window.location.origin;
+// API Base URL is defined in auth.js
 
 // Initialize Game
 function initGame() {
@@ -42,7 +41,8 @@ async function hasPlayerCompletedGame(playerName) {
     if (!playerName) return false;
     
     try {
-        const response = await fetch(`${API_BASE_URL}/api/player/${encodeURIComponent(playerName)}/can-play`);
+        const apiUrl = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : window.location.origin;
+        const response = await fetch(`${apiUrl}/api/player/${encodeURIComponent(playerName)}/can-play`);
         const data = await response.json();
         return !data.canPlay; // If can't play, they've already completed
     } catch (error) {
