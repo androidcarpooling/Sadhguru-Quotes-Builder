@@ -69,20 +69,20 @@ function processQuote(quote) {
         index: index
     }));
     
-    // Reveal hints based on quote length (Easy Difficulty - More Hints)
-    // More hints for easier gameplay
+    // Reveal hints based on quote length (Very Easy Difficulty - Maximum Hints)
+    // Maximum hints for very easy gameplay
     const numWords = gameState.correctOrder.length;
     let numRevealed;
     if (numWords <= 5) {
-        numRevealed = 4; // Short quotes: 4 hints
+        numRevealed = Math.max(3, Math.floor(numWords * 0.6)); // Short quotes: 60% of words as hints (min 3)
     } else if (numWords <= 10) {
-        numRevealed = 5; // Medium quotes: 5 hints
+        numRevealed = Math.max(5, Math.floor(numWords * 0.5)); // Medium quotes: 50% of words as hints (min 5)
     } else if (numWords <= 15) {
-        numRevealed = 6; // Long quotes: 6 hints
+        numRevealed = Math.max(7, Math.floor(numWords * 0.45)); // Long quotes: 45% of words as hints (min 7)
     } else if (numWords <= 20) {
-        numRevealed = 7; // Very long quotes: 7 hints
+        numRevealed = Math.max(9, Math.floor(numWords * 0.4)); // Very long quotes: 40% of words as hints (min 9)
     } else {
-        numRevealed = Math.max(Math.floor(numWords * 0.35), 7); // Extra long: 35% of words as hints (minimum 7)
+        numRevealed = Math.max(10, Math.floor(numWords * 0.4)); // Extra long: 40% of words as hints (minimum 10)
     }
     gameState.revealedIndices = [];
     
