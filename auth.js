@@ -178,12 +178,14 @@ async function submitScore(score, quotesCompleted, level, timeTaken, playerName)
             return { success: true, data };
         } else {
             console.error('Failed to submit score - Response:', response.status, data);
-            alert('Failed to save score: ' + (data.error || 'Unknown error'));
-            return { success: false, error: data.error || 'Unknown error' };
+            return { 
+                success: false, 
+                error: data.error || 'Unknown error',
+                alreadyPlayed: data.alreadyPlayed || response.status === 403
+            };
         }
     } catch (error) {
         console.error('Failed to submit score - Exception:', error);
-        alert('Error saving score: ' + error.message);
         return { success: false, error: error.message };
     }
 }
