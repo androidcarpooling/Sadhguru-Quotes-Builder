@@ -245,9 +245,13 @@ function renderJumbledWords() {
         chip.dataset.index = index;
         chip.dataset.wordIndex = wordObj.index;
         
-        // Drag event listeners
+        // Drag event listeners (desktop)
         chip.addEventListener('dragstart', handleDragStart);
         chip.addEventListener('dragend', handleDragEnd);
+        
+        // Touch event listeners (mobile)
+        chip.addEventListener('touchstart', handleTouchStart, { passive: false });
+        chip.addEventListener('touchend', handleTouchEnd, { passive: true });
         
         container.appendChild(chip);
     });
@@ -266,7 +270,7 @@ function renderQuoteBuilder() {
     const container = document.getElementById('quote-builder');
     
     if (gameState.arrangedWords.length === 0) {
-        container.innerHTML = '<p class="placeholder-text">Drag words here to build the quote...</p>';
+        container.innerHTML = '<p class="placeholder-text">Tap words to build the quote...</p>';
         return;
     }
     
@@ -283,6 +287,9 @@ function renderQuoteBuilder() {
             blankSlot.addEventListener('dragenter', handleBlankDragEnter);
             blankSlot.addEventListener('dragleave', handleBlankDragLeave);
             blankSlot.addEventListener('drop', handleBlankDrop);
+            // Touch events for mobile
+            blankSlot.addEventListener('touchmove', handleBlankTouchMove, { passive: false });
+            blankSlot.addEventListener('touchend', handleBlankTouchEnd, { passive: true });
             container.appendChild(blankSlot);
         } else {
             // Word slot (revealed or filled)
@@ -297,10 +304,15 @@ function renderQuoteBuilder() {
             if (!isRevealed) {
                 // Click to send back to jumbled (only for non-revealed words)
                 wordElement.addEventListener('click', () => removeWordFromQuote(index));
+                // Touch to send back (mobile)
+                wordElement.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    removeWordFromQuote(index);
+                }, { passive: false });
                 // Make draggable for reordering
                 wordElement.addEventListener('dragstart', handleWordDragStart);
                 wordElement.addEventListener('dragend', handleWordDragEnd);
-                wordElement.title = 'Click or drag to send back to jumbled words';
+                wordElement.title = 'Tap or drag to send back to jumbled words';
             } else {
                 wordElement.title = 'Hint: This word is revealed';
             }
@@ -312,6 +324,89 @@ function renderQuoteBuilder() {
 
 // Drag and Drop Handlers
 let draggedElement = null;
+let selectedWordChip = null; // For mobile touch selection
+let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+// Touch handlers for mobile
+function handleTouchStart(e) {
+    if (!isMobile) return;
+    e.preventDefault();
+    const chip = e.currentTarget;
+    selectedWordChip = chip;
+    chip.classList.add('selected-word');
+    
+    // Highlight available blank slots
+    const blanks = document.querySelectorAll('.quote-blank');
+    blanks.forEach(blank => {
+        blank.classList.add('highlight-drop-zone');
+    });
+}
+
+function handleTouchEnd(e) {
+    if (!isMobile || !selectedWordChip) return;
+    
+    const touch = e.changedTouches[0];
+    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    // Find the blank slot or quote builder area
+    const blankSlot = elementBelow?.closest('.quote-blank');
+    const quoteBuilder = elementBelow?.closest('#quote-builder');
+    
+    if (blankSlot) {
+        const blankIndex = parseInt(blankSlot.dataset.index);
+        const wordIndex = parseInt(selectedWordChip.dataset.index);
+        handleWordPlacement(wordIndex, blankIndex);
+    } else if (quoteBuilder) {
+        // Find first available blank
+        const firstBlank = quoteBuilder.querySelector('.quote-blank');
+        if (firstBlank) {
+            const blankIndex = parseInt(firstBlank.dataset.index);
+            const wordIndex = parseInt(selectedWordChip.dataset.index);
+            handleWordPlacement(wordIndex, blankIndex);
+        }
+    }
+    
+    // Clean up
+    selectedWordChip?.classList.remove('selected-word');
+    selectedWordChip = null;
+    document.querySelectorAll('.highlight-drop-zone').forEach(el => {
+        el.classList.remove('highlight-drop-zone');
+    });
+}
+
+function handleBlankTouchMove(e) {
+    if (!isMobile) return;
+    e.preventDefault();
+}
+
+function handleBlankTouchEnd(e) {
+    if (!isMobile || !selectedWordChip) return;
+    e.preventDefault();
+    const blankSlot = e.currentTarget;
+    const blankIndex = parseInt(blankSlot.dataset.index);
+    const wordIndex = parseInt(selectedWordChip.dataset.index);
+    handleWordPlacement(wordIndex, blankIndex);
+    
+    // Clean up
+    selectedWordChip?.classList.remove('selected-word');
+    selectedWordChip = null;
+    document.querySelectorAll('.highlight-drop-zone').forEach(el => {
+        el.classList.remove('highlight-drop-zone');
+    });
+}
+
+function handleWordPlacement(wordIndex, blankIndex) {
+    const wordObj = gameState.jumbledWords[wordIndex];
+    if (!wordObj) return;
+    
+    // Place word in blank slot
+    gameState.arrangedWords[blankIndex] = wordObj;
+    gameState.jumbledWords.splice(wordIndex, 1);
+    
+    renderJumbledWords();
+    renderQuoteBuilder();
+    updateStats();
+}
 
 function handleDragStart(e) {
     draggedElement = this;
