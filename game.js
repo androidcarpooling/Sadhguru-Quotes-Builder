@@ -81,13 +81,11 @@ async function startGame() {
     const hasPlayed = await hasPlayerCompletedGame(playerName);
     
     if (hasPlayed) {
-        alreadyPlayedMsg.textContent = 'You have already completed a game! You can only view the leaderboard.';
+        alreadyPlayedMsg.textContent = 'You have already completed a game! Click "View My Score" to see your leaderboard position.';
         alreadyPlayedMsg.classList.remove('hidden');
-        nameInput.disabled = true;
-        nameInput.style.opacity = '0.5';
-        setTimeout(() => {
-            showLeaderboardModal();
-        }, 1500);
+        nameInput.disabled = false;
+        nameInput.style.opacity = '1';
+        // Don't auto-show leaderboard, let them click "View My Score"
         return;
     }
     
