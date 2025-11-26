@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Sadhguru Quotes Builder</title>
+    <link rel="stylesheet" href="styles.css?v=5.0">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header -->
+        <header class="game-header">
+            <h1>🧘 Sadhguru Quotes Builder</h1>
+            <div class="header-right">
+                <div class="game-stats">
+                    <div class="stat">
+                        <span class="stat-label">Score:</span>
+                        <span id="total-score">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Level:</span>
+                        <span id="current-level">1</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Quotes Completed:</span>
+                        <span id="quotes-completed">0</span>
+                    </div>
+                </div>
+                <div class="auth-section">
+                    <span id="user-info" class="user-info hidden"></span>
+                    <button id="login-btn" class="btn btn-secondary btn-small" onclick="showLoginModal()">Login</button>
+                    <button id="register-btn" class="btn btn-secondary btn-small" onclick="showRegisterModal()">Sign Up</button>
+                    <button id="logout-btn" class="btn btn-secondary btn-small hidden" onclick="logout()">Logout</button>
+                    <button id="leaderboard-btn" class="btn btn-secondary btn-small" onclick="showLeaderboardModal()">🏆 Leaderboard</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Timer Section -->
+        <div class="timer-section">
+            <div class="timer-display">
+                <span class="timer-label">⏱️ Time:</span>
+                <span id="timer">0.0s</span>
+            </div>
+            <div class="score-preview">
+                <span class="score-label">Current Score:</span>
+                <span id="current-score">0</span>
+            </div>
+        </div>
+
+        <!-- Main Game Area -->
+        <div class="main-game-area">
+            <!-- Left: Jumbled Words -->
+            <div class="words-container">
+                <h2>📝 Jumbled Words</h2>
+                <div id="jumbled-words" class="jumbled-words-area">
+                    <!-- Words will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Center: Quote Builder -->
+            <div class="quote-container">
+                <h2>✨ Arrange the Quote</h2>
+                <div id="quote-builder" class="quote-builder-area">
+                    <p class="placeholder-text">Drag words here to build the quote...</p>
+                </div>
+                <div class="quote-actions">
+                    <button id="check-button" class="btn btn-primary" onclick="checkQuote()">✓ Check Answer</button>
+                    <button id="shuffle-jumbled-button" class="btn btn-secondary" onclick="shuffleJumbledWords()">🔀 Shuffle Jumbled</button>
+                    <button id="shuffle-arranged-button" class="btn btn-secondary" onclick="shuffleArrangedWords()">🔄 Reorder Quote</button>
+                </div>
+            </div>
+
+            <!-- Right: Instructions & Info -->
+            <div class="info-container">
+                <h2>📖 How to Play</h2>
+                <div class="instructions">
+                    <ol>
+                        <li>Some words are revealed as hints (yellow)</li>
+                        <li>Drag words to fill the blanks</li>
+                        <li>Click words or drag them back to jumbled area</li>
+                        <li>Drag words within quote to reorder</li>
+                        <li>Click "Check Answer" when done</li>
+                        <li>Faster = Higher Score!</li>
+                    </ol>
+                </div>
+                
+                <div class="quote-info">
+                    <h3>Current Quote</h3>
+                    <p id="quote-source" class="quote-source">- Sadhguru</p>
+                </div>
+
+                <div class="scoring-info">
+                    <h3>Scoring</h3>
+                    <ul>
+                        <li>Time Bonus: Up to 1000 points</li>
+                        <li>Accuracy: 500 points for correct</li>
+                        <li>Speed Bonus: Faster = More points!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Modal -->
+        <div id="result-modal" class="modal hidden">
+            <div class="modal-content result-content">
+                <button class="close-btn" onclick="closeResultModal()">×</button>
+                <div id="result-content"></div>
+                <button class="btn btn-primary" onclick="nextQuote()">Next Quote →</button>
+            </div>
+        </div>
+
+        <!-- Success Animation -->
+        <div id="success-animation" class="success-animation hidden">
+            <div class="success-content">
+                <span class="success-icon">✨</span>
+                <h2>Perfect!</h2>
+            </div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="start-screen">
+            <div class="start-content">
+                <h1>🧘 Sadhguru Quotes Builder</h1>
+                <p class="start-description">Unscramble the wisdom of Sadhguru! Arrange jumbled words to form inspiring quotes. The faster you complete, the higher your score!</p>
+                <button class="btn btn-primary btn-large" onclick="startGame()">Start Playing</button>
+            </div>
+        </div>
+
+        <!-- Login Modal -->
+        <div id="login-modal" class="modal hidden">
+            <div class="modal-content auth-content">
+                <button class="close-btn" onclick="closeLoginModal()">×</button>
+                <h2>Login</h2>
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <input type="text" id="login-username" placeholder="Username or Email" required>
+                    <input type="password" id="login-password" placeholder="Password" required>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                <p id="login-error" class="error-message"></p>
+            </div>
+        </div>
+
+        <!-- Register Modal -->
+        <div id="register-modal" class="modal hidden">
+            <div class="modal-content auth-content">
+                <button class="close-btn" onclick="closeRegisterModal()">×</button>
+                <h2>Sign Up</h2>
+                <form id="register-form" onsubmit="handleRegister(event)">
+                    <input type="text" id="register-username" placeholder="Username" required>
+                    <input type="email" id="register-email" placeholder="Email" required>
+                    <input type="password" id="register-password" placeholder="Password (min 6 characters)" required minlength="6">
+                    <button type="submit" class="btn btn-primary">Sign Up</button>
+                </form>
+                <p id="register-error" class="error-message"></p>
+            </div>
+        </div>
+
+        <!-- Leaderboard Modal -->
+        <div id="leaderboard-modal" class="modal hidden">
+            <div class="modal-content leaderboard-content">
+                <button class="close-btn" onclick="closeLeaderboardModal()">×</button>
+                <h2>🏆 Leaderboard</h2>
+                <div id="leaderboard-list" class="leaderboard-list">
+                    <p>Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="quotes-data.js?v=6.0"></script>
+    <script src="auth.js?v=1.0"></script>
+    <script src="game.js?v=8.0"></script>
+</body>
+</html>

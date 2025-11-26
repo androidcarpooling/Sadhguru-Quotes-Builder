@@ -1,0 +1,10 @@
+node_modules/
+.env
+game.db
+game.db-journal
+*.log
+.DS_Store
+
+# But keep .env.example for reference
+!.env.example
+
