@@ -63,6 +63,10 @@ npm run dev  # Auto-reload on file changes
 
 See `QUICKSTART.md` for more details and `DEPLOYMENT.md` for production deployment.
 
+### Deployment note
+- On Railway, the server binds to `process.env.PORT` (default 3000) and listens on `0.0.0.0`.
+- A health check is available at `/api/health` to verify the service and database connectivity after deploys.
+
 ## 🏆 Scoring Breakdown
 
 - **Base Score**: 500 points for getting it right
