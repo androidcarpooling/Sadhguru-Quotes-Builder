@@ -360,6 +360,22 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Health check (for deployment debugging)
+app.get('/api/health', (req, res) => {
+    db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, tables) => {
+        if (err) {
+            return res.status(500).json({ status: 'error', error: err.message });
+        }
+        res.json({
+            status: 'ok',
+            port: PORT,
+            environment: process.env.NODE_ENV || 'development',
+            dbPath,
+            tables: tables.map(t => t.name)
+        });
+    });
+});
+
 // Initialize Database and start server
 // Default to /tmp for writeability on hosted environments (override with DATABASE_PATH)
 const dbPath = process.env.DATABASE_PATH || '/tmp/game.db';
