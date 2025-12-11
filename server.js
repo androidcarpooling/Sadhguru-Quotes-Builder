@@ -361,8 +361,8 @@ app.get('/', (req, res) => {
 });
 
 // Initialize Database and start server
-// Use absolute path for Railway deployment
-const dbPath = process.env.DATABASE_PATH || './game.db';
+// Default to /tmp for writeability on hosted environments (override with DATABASE_PATH)
+const dbPath = process.env.DATABASE_PATH || '/tmp/game.db';
 db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error opening database:', err);
