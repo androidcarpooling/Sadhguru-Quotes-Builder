@@ -384,8 +384,9 @@ db = new sqlite3.Database(dbPath, (err) => {
                 });
                 
                 // Start server after database is ready
-                app.listen(PORT, () => {
-                    console.log(`Server running on http://localhost:${PORT}`);
+                // Bind to 0.0.0.0 so hosts like Railway/Render can expose the port
+                app.listen(PORT, '0.0.0.0', () => {
+                    console.log(`Server running on port ${PORT}`);
                     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
                 });
             }
